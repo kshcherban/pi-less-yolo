@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# ABOUTME: Verifies Rust 1.98 and curl work as the container's runtime user.
+# ABOUTME: Builds, installs, and runs an offline Cargo project without root.
+#MISE description="Smoke test Rust compilation, Cargo installation, and curl"
+set -euo pipefail
+
+# shellcheck source=tasks/pi/_docker_flags
+source tasks/pi/_docker_flags
+
+# shellcheck disable=SC2016  # Variables expand inside the container.
+"${DOCKER_CMD}" run "${DOCKER_FLAGS[@]}" pi-less-yolo:latest bash -euc '
+  [[ "$(rustc --version)" == "rustc 1.98.0 "* ]]
+  [[ "$(cargo --version)" == "cargo 1.98.0 "* ]]
+  project=$(mktemp -d)
+  trap '\''rm -rf "$project"'\'' EXIT
+  cd "$project"
+  cargo init --quiet --bin --name pi-rust-smoke --vcs none .
+  cargo build --quiet --offline
+  cargo install --quiet --offline --path .
+  [[ "$(pi-rust-smoke)" == "Hello, world!" ]]
+  pi-rust-smoke > message.txt
+  [[ "$(curl --fail --silent --show-error "file://$project/message.txt")" == "Hello, world!" ]]
+'

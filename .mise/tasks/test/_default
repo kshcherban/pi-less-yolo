@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
+# ABOUTME: Runs the container smoke tests through mise.
+# ABOUTME: Verifies installed tools and runtime sandbox behavior.
 #MISE description="Run all container smoke tests"
 set -euo pipefail
 
 mise run test:pi
 mise run test:docker
 mise run test:python
+mise run test:rust
 mise run test:editor
 mise run test:limits
 mise run test:readonly

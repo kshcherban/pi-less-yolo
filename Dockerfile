@@ -1,4 +1,6 @@
 # syntax=docker/dockerfile:1
+# ABOUTME: Builds the sandboxed pi coding environment and its development tools.
+# ABOUTME: Installs shared toolchains for containers running as the host UID.
 
 FROM cgr.dev/chainguard/node:latest-dev@sha256:f09827f0f82991e657bbc4017674a104604a5bb42690e1977315c57713b84ef2
 
@@ -42,8 +44,16 @@ ENV UV_PYTHON_INSTALL_DIR=/usr/local/share/uv/python
 RUN uv python install 3.14.7 \
     && ln -s "$(uv python find 3.14.7)" /usr/local/bin/python3
 
+# Install Rust with shared binaries; Cargo caches default to the runtime user's home.
+ENV RUSTUP_HOME=/usr/local/share/rustup
+ARG CARGO_HOME=/usr/local/share/cargo
+RUN curl --proto "=https" --tlsv1.2 -fsSL https://sh.rustup.rs -o /tmp/rustup-init.sh \
+    && sh /tmp/rustup-init.sh -y --no-modify-path --profile minimal --default-toolchain 1.98.0 \
+    && rm /tmp/rustup-init.sh
+ENV PATH="/home/piuser/.cargo/bin:/usr/local/share/cargo/bin:${PATH}"
+
 # Install pi globally
-RUN npm install -g "@earendil-works/pi-coding-agent@1.3.0"
+RUN npm install -g "@earendil-works/pi-coding-agent@1.4.0"
 
 # Prepend extension binaries (host-mounted via /pi-agent). Security: binaries
 # here can shadow any command; no privilege escalation (--cap-drop=ALL,
